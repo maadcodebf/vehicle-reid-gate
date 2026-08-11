@@ -88,7 +88,7 @@ pip install onnxoptimizer onnxsim onnxscript
 Download the VeRi-776 dataset weights (veri_sbs_R50-ibn.pth) into a weights/ directory:
 ```bash
 mkdir -p weights
-wget [https://github.com/JDAI-CV/fast-reid/releases/download/v0.1.1/veri_sbs_R50-ibn.pth](https://github.com/JDAI-CV/fast-reid/releases/download/v0.1.1/veri_sbs_R50-ibn.pth) -O weights/veri_sbs_R50-ibn.pth
+wget https://github.com/JDAI-CV/fast-reid/releases/download/v0.1.1/veri_sbs_R50-ibn.pth -O weights/veri_sbs_R50-ibn.pth
 ```
 4. Export to ONNX:
 Run the Fast-ReID export script:
