@@ -76,6 +76,34 @@ You must provide a **vehicle Re-ID ONNX model** at:
 models/vehicle_reid.onnx
 ```
 
+**Exporting ONNX from Fast-ReID (Step-by-Step)**
+If you need to generate the vehicle_reid.onnx model using the Fast-ReID framework:
+
+1. Setup Environment: Open the fast-reid repository using the provided Dev Container (.devcontainer/) or inside a Python 3.10+ environment.
+2. Install Additional Dependencies:
+```bash
+pip install onnxoptimizer onnxsim onnxscript
+```
+3. Download Pre-trained Vehicle Weights:
+Download the VeRi-776 dataset weights (veri_sbs_R50-ibn.pth) into a weights/ directory:
+```bash
+mkdir -p weights
+wget [https://github.com/JDAI-CV/fast-reid/releases/download/v0.1.1/veri_sbs_R50-ibn.pth](https://github.com/JDAI-CV/fast-reid/releases/download/v0.1.1/veri_sbs_R50-ibn.pth) -O weights/veri_sbs_R50-ibn.pth
+```
+4. Export to ONNX:
+Run the Fast-ReID export script:
+```bash
+python tools/deploy/onnx_export.py \
+    --config-file configs/VeRi/sbs_R50-ibn.yml \
+    --output vehicle_reid.onnx \
+    --opts MODEL.WEIGHTS weights/veri_sbs_R50-ibn.pth MODEL.DEVICE cpu
+```
+5. Move the Model:
+Copy the generated vehicle_reid.onnx/baseline.onnx to your API folder:
+```bash
+cp vehicle_reid.onnx/baseline.onnx /path/to/vehicle-reid-gate/models/vehicle_reid.onnx
+```
+
 And configure `appsettings.json` to match the model:
 - `ReId:InputName`
 - `ReId:OutputName`

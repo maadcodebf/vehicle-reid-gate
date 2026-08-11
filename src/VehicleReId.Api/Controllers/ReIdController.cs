@@ -16,10 +16,10 @@ public class ReIdController : ControllerBase
     public IActionResult Health() => Ok(new { ok = true, service = "vehicle-reid" });
 
     [HttpPost("enroll")]
-    public async Task<ActionResult<EnrollResponse>> Enroll([FromBody] EnrollRequest req)
+    public async Task<ActionResult<EnrollResponse>> Enroll([FromForm] EnrollFormRequest req)
         => Ok(await _svc.EnrollAsync(req));
 
     [HttpPost("match")]
-    public async Task<ActionResult<MatchResponse>> Match([FromBody] MatchRequest req)
+    public async Task<ActionResult<MatchResponse>> Match([FromForm] MatchFormRequest req)
         => Ok(await _svc.MatchAsync(req));
 }

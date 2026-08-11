@@ -19,30 +19,30 @@ public class ReIdService
         _opt = opt.Value;
     }
 
-    public async Task<EnrollResponse> EnrollAsync(EnrollRequest req)
+    public async Task<EnrollResponse> EnrollAsync(EnrollFormRequest req)
     {
         if (req.Images is null || req.Images.Count == 0 || req.Images.Count > 3)
-            throw new ArgumentException("Images must contain 1 to 3 items.");
+            throw new ArgumentException("Debe enviar entre 1 y 3 imágenes.");
 
         var ev = new PassageEvent
         {
-            BarrierId = req.BarrierId,
+            BarrierId = "GLOBAL",
             TimestampUtc = req.TimestampUtc,
-            ExternalTruckId = req.ExternalTruckId
+            ExternalTruckId = req.LicensePlate
         };
         _db.PassageEvents.Add(ev);
         await _db.SaveChangesAsync();
 
         int stored = 0;
-        foreach (var img in req.Images)
+        foreach (var file in req.Images)
         {
-            var vec = _emb.EmbedFromBase64Jpeg(img.Base64Jpeg);
+            var vec = _emb.EmbedFromFormFile(file);
             var pointId = Guid.NewGuid().ToString("N");
 
             var payload = new
             {
                 passage_event_id = ev.Id,
-                barrier_id = req.BarrierId,
+                license_plate = req.LicensePlate,
                 timestamp_utc = req.TimestampUtc.ToString("O")
             };
 
@@ -51,9 +51,9 @@ public class ReIdService
             _db.EmbeddingRecords.Add(new EmbeddingRecord
             {
                 PassageEventId = ev.Id,
-                BarrierId = req.BarrierId,
+                BarrierId = "GLOBAL",
                 TimestampUtc = req.TimestampUtc,
-                ImageName = img.FileName,
+                ImageName = file.FileName,
                 QdrantPointId = pointId
             });
 
@@ -61,40 +61,43 @@ public class ReIdService
         }
 
         await _db.SaveChangesAsync();
-        return new EnrollResponse(ev.Id, stored);
+        return new EnrollResponse(ev.Id, req.LicensePlate, stored);
     }
 
-    public async Task<MatchResponse> MatchAsync(MatchRequest req)
+    public async Task<MatchResponse> MatchAsync(MatchFormRequest req)
     {
         if (req.Images is null || req.Images.Count == 0 || req.Images.Count > 3)
-            throw new ArgumentException("Images must contain 1 to 3 items.");
+            throw new ArgumentException("Debe enviar entre 1 y 3 imágenes.");
 
-        var from = req.TimestampUtc.AddMinutes(-Math.Abs(req.TimeWindowMinutes)).ToString("O");
-        var to = req.TimestampUtc.AddMinutes(1).ToString("O");
-
-        var filter = new
+        object? filter = null;
+        if (req.TimeWindowMinutes > 0)
         {
-            must = new object[]
+            var from = req.TimestampUtc.AddMinutes(-Math.Abs(req.TimeWindowMinutes)).ToString("O");
+            var to = req.TimestampUtc.AddMinutes(5).ToString("O");
+
+            filter = new
             {
-                new { key = "barrier_id", match = new { value = req.PreviousBarrierId } },
-                new { key = "timestamp_utc", range = new { gte = from, lte = to } }
-            }
-        };
+                must = new object[]
+                {
+                    new { key = "timestamp_utc", range = new { gte = from, lte = to } }
+                }
+            };
+        }
 
         var allCandidates = new List<MatchCandidate>();
 
-        foreach (var img in req.Images)
+        foreach (var file in req.Images)
         {
-            var q = _emb.EmbedFromBase64Jpeg(img.Base64Jpeg);
+            var q = _emb.EmbedFromFormFile(file);
             var hits = await _qdrant.SearchAsync(q, req.TopK, filter);
 
             foreach (var h in hits)
             {
                 var passageEventId = h.Payload.GetProperty("passage_event_id").GetGuid();
-                var barrierId = h.Payload.GetProperty("barrier_id").GetString()!;
+                var licensePlate = h.Payload.TryGetProperty("license_plate", out var lp) ? lp.GetString()! : "UNKNOWN";
                 var ts = DateTime.Parse(h.Payload.GetProperty("timestamp_utc").GetString()!).ToUniversalTime();
 
-                allCandidates.Add(new MatchCandidate(h.Id, passageEventId, h.Score, barrierId, ts));
+                allCandidates.Add(new MatchCandidate(h.Id, passageEventId, licensePlate, h.Score, ts));
             }
         }
 
@@ -112,6 +115,8 @@ public class ReIdService
                         : bestScore >= _opt.ThresholdLow ? "UNCERTAIN"
                         : "NO_MATCH";
 
-        return new MatchResponse(decision, bestScore, best, merged);
+        string? matchedPlate = decision != "NO_MATCH" ? best?.LicensePlate : null;
+
+        return new MatchResponse(decision, bestScore, matchedPlate, best, merged);
     }
 }

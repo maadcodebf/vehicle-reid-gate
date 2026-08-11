@@ -47,7 +47,7 @@ public class QdrantService
         {
             var id = x.GetProperty("id").ToString();
             var score = x.GetProperty("score").GetSingle();
-            var payload = x.GetProperty("payload");
+            var payload = x.GetProperty("payload").Clone();
             list.Add((id, score, payload));
         }
         return list;
