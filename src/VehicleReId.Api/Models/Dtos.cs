@@ -3,14 +3,11 @@ namespace VehicleReId.Api.Models;
 public class EnrollFormRequest
 {
     public required string LicensePlate { get; set; }
-    public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
     public required List<IFormFile> Images { get; set; }
 }
 
 public class MatchFormRequest
 {
-    public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
-    public int TimeWindowMinutes { get; set; } = 120;
     public required List<IFormFile> Images { get; set; }
     public int TopK { get; set; } = 1;
 }

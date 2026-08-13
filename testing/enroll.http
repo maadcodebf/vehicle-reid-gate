@@ -1,0 +1,65 @@
+### Vehicle Re-ID Gate - ENROLL requests
+### Requires the "REST Client" VS Code extension (humao.rest-client) to run inline.
+### Images are read from ../dataset/upload
+
+@baseUrl = http://localhost:5000
+
+### 1) Enroll GIY034 - 20260810_161437_552.jpeg
+POST {{baseUrl}}/api/reid/enroll HTTP/1.1
+Content-Type: multipart/form-data; boundary=----ReIdBoundaryGIY034
+
+------ReIdBoundaryGIY034
+Content-Disposition: form-data; name="LicensePlate"
+
+GIY034
+------ReIdBoundaryGIY034
+Content-Disposition: form-data; name="Images"; filename="20260810_161437_552.jpeg"
+Content-Type: image/jpeg
+
+< ../dataset/upload/20260810_161437_552.jpeg
+------ReIdBoundaryGIY034--
+
+### 2) Enroll ANV363 - 20260810_183509_318.jpeg
+POST {{baseUrl}}/api/reid/enroll HTTP/1.1
+Content-Type: multipart/form-data; boundary=----ReIdBoundaryANV363
+
+------ReIdBoundaryANV363
+Content-Disposition: form-data; name="LicensePlate"
+
+ANV363
+------ReIdBoundaryANV363
+Content-Disposition: form-data; name="Images"; filename="20260810_183509_318.jpeg"
+Content-Type: image/jpeg
+
+< ../dataset/upload/20260810_183509_318.jpeg
+------ReIdBoundaryANV363--
+
+### 3) Enroll RGH433 - 20260810_194343_216.jpeg
+POST {{baseUrl}}/api/reid/enroll HTTP/1.1
+Content-Type: multipart/form-data; boundary=----ReIdBoundaryRGH433
+
+------ReIdBoundaryRGH433
+Content-Disposition: form-data; name="LicensePlate"
+
+RGH433
+------ReIdBoundaryRGH433
+Content-Disposition: form-data; name="Images"; filename="20260810_194343_216.jpeg"
+Content-Type: image/jpeg
+
+< ../dataset/upload/20260810_194343_216.jpeg
+------ReIdBoundaryRGH433--
+
+### 4) Enroll PJM609 - 20260810_202950_078.jpeg
+POST {{baseUrl}}/api/reid/enroll HTTP/1.1
+Content-Type: multipart/form-data; boundary=----ReIdBoundaryPJM609
+
+------ReIdBoundaryPJM609
+Content-Disposition: form-data; name="LicensePlate"
+
+PJM609
+------ReIdBoundaryPJM609
+Content-Disposition: form-data; name="Images"; filename="20260810_202950_078.jpeg"
+Content-Type: image/jpeg
+
+< ../dataset/upload/20260810_202950_078.jpeg
+------ReIdBoundaryPJM609--

@@ -24,10 +24,13 @@ public class ReIdService
         if (req.Images is null || req.Images.Count == 0 || req.Images.Count > 3)
             throw new ArgumentException("Debe enviar entre 1 y 3 imágenes.");
 
+        // Marca de tiempo de auditoría: siempre generada por el servidor, nunca provista por el cliente.
+        var nowUtc = DateTime.UtcNow;
+
         var ev = new PassageEvent
         {
             BarrierId = "GLOBAL",
-            TimestampUtc = req.TimestampUtc,
+            TimestampUtc = nowUtc,
             ExternalTruckId = req.LicensePlate
         };
         _db.PassageEvents.Add(ev);
@@ -43,7 +46,7 @@ public class ReIdService
             {
                 passage_event_id = ev.Id,
                 license_plate = req.LicensePlate,
-                timestamp_utc = req.TimestampUtc.ToString("O")
+                timestamp_utc = nowUtc.ToString("O")
             };
 
             await _qdrant.UpsertAsync(pointId, vec, payload);
@@ -52,7 +55,7 @@ public class ReIdService
             {
                 PassageEventId = ev.Id,
                 BarrierId = "GLOBAL",
-                TimestampUtc = req.TimestampUtc,
+                TimestampUtc = nowUtc,
                 ImageName = file.FileName,
                 QdrantPointId = pointId
             });
@@ -69,27 +72,14 @@ public class ReIdService
         if (req.Images is null || req.Images.Count == 0 || req.Images.Count > 3)
             throw new ArgumentException("Debe enviar entre 1 y 3 imágenes.");
 
-        object? filter = null;
-        if (req.TimeWindowMinutes > 0)
-        {
-            var from = req.TimestampUtc.AddMinutes(-Math.Abs(req.TimeWindowMinutes)).ToString("O");
-            var to = req.TimestampUtc.AddMinutes(5).ToString("O");
-
-            filter = new
-            {
-                must = new object[]
-                {
-                    new { key = "timestamp_utc", range = new { gte = from, lte = to } }
-                }
-            };
-        }
-
+        // El match compara contra toda la colección: no se filtra por ventana de tiempo,
+        // ya que puestos distintos pueden validar el mismo camión en cualquier momento.
         var allCandidates = new List<MatchCandidate>();
 
         foreach (var file in req.Images)
         {
             var q = _emb.EmbedFromFormFile(file);
-            var hits = await _qdrant.SearchAsync(q, req.TopK, filter);
+            var hits = await _qdrant.SearchAsync(q, req.TopK, filter: null);
 
             foreach (var h in hits)
             {

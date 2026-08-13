@@ -50,7 +50,7 @@ public class EmbeddingService : IDisposable
     private float[] ExtractEmbedding(Mat img)
     {
         using var resized = new Mat();
-        Cv2.Resize(img, resized, new Size(_opt.InputWidth, _opt.InputHeight));
+        Cv2.Resize(img, resized, new Size(_opt.InputWidth, _opt.InputHeight), 0, 0, InterpolationFlags.Cubic);
 
         var chw = ToNormalizedChw(resized);
         var tensor = new DenseTensor<float>(chw, new[] { 1, 3, _opt.InputHeight, _opt.InputWidth });
@@ -81,21 +81,11 @@ public class EmbeddingService : IDisposable
             for (int x = 0; x < w; x++)
             {
                 var p = bgr.At<Vec3b>(y, x);
-                
-                // Conversión BGR -> RGB y escalado [0, 1]
-                float r = p.Item2 / 255f;
-                float g = p.Item1 / 255f;
-                float b = p.Item0 / 255f;
-
-                // Estandarización ImageNet (Mean/Std)
-                r = (r - 0.485f) / 0.229f;
-                g = (g - 0.456f) / 0.224f;
-                b = (b - 0.406f) / 0.225f;
 
                 int idx = y * w + x;
-                chw[idx] = r;
-                chw[h * w + idx] = g;
-                chw[2 * h * w + idx] = b;
+                chw[idx] = p.Item2;             // R
+                chw[h * w + idx] = p.Item1;      // G
+                chw[2 * h * w + idx] = p.Item0;  // B
             }
         }
         return chw;
